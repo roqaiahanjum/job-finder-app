@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobFinder | Find Your Dream Remote Job</title>
+    <!-- Google Fonts for modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="container header-content">
+            <div class="logo">
+                <h1>JobFinder<span>.</span></h1>
+            </div>
+            <nav class="view-toggle">
+                <button id="viewAllBtn" class="active">All Jobs</button>
+                <button id="viewSavedBtn">My Saved Jobs <span id="savedCountBadge">0</span></button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Search & Filter Section -->
+        <section class="search-section" id="searchContainer">
+            <div class="search-grid">
+                <div class="input-group">
+                    <label for="keywordInput">Keyword / Role</label>
+                    <input type="text" id="keywordInput" placeholder="e.g. Frontend Developer">
+                </div>
+                <div class="input-group">
+                    <label for="locationInput">Location</label>
+                    <input type="text" id="locationInput" placeholder="e.g. USA, UK, WW">
+                </div>
+                <div class="input-group">
+                    <label for="categoryInput">Category</label>
+                    <select id="categoryInput">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+            </div>
+            <div class="search-actions">
+                <button id="searchBtn" class="btn-primary">Search Now</button>
+                <button id="clearBtn" class="btn-secondary">Clear Filters</button>
+            </div>
+        </section>
+
+        <!-- Stats & Loading State -->
+        <div class="results-metadata">
+            <h2 id="resultsHeading">All Remote Jobs</h2>
+            <p id="jobCountDisplay">Fetching jobs...</p>
+        </div>
+
+        <div id="loadingSpinner" class="spinner-container hidden">
+            <div class="spinner"></div>
+            <p>Loading the latest jobs...</p>
+        </div>
+
+        <!-- Job Grid -->
+        <section id="jobGrid" class="job-grid">
+            <!-- Job cards will be injected here via JavaScript -->
+        </section>
+
+        <!-- No Results Message -->
+        <div id="noResults" class="no-results hidden">
+            <img src="https://img.icons8.com/isometric/100/search-property.png" alt="No results">
+            <h3>No jobs found</h3>
+            <p>Try adjusting your search terms or location filters.</p>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2024 JobFinder. Built with Vanilla JS & Remotive API.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
