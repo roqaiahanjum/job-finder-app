@@ -4,7 +4,7 @@ A modern, fast, and responsive remote job search engine built with pure vanilla 
 
 ---
 
-[**Live Demo**](FILL_IN_YOUR_LIVE_DEMO_LINK_HERE) | [**Repository**](FILL_IN_YOUR_REPO_LINK_HERE)
+[Live Demo](https://roqaiahanjum.github.io/job-finder-app/) | [Repository](https://github.com/roqaiahanjum/job-finder-app)
 
 ---
 
@@ -15,7 +15,7 @@ A modern, fast, and responsive remote job search engine built with pure vanilla 
 ### Key Features
 - **Real-Time Data**: Fetches the latest job listings directly from the Remotive public API.
 - **Dynamic Filtering**: Live search by keyword/role, location, and job category.
-- **Persistant Favorites**: Save jobs to your personal "My Saved Jobs" list, which remains available even after refreshing the page or closing the browser.
+- **Persistent Favorites**: Save jobs to your personal "My Saved Jobs" list, which remains available even after refreshing the page or closing the browser.
 - **Smart Category Sync**: Automatically generates the category dropdown from the actual jobs available, ensuring you never select a category that has no listings.
 - **Responsive Design**: A mobile-first, card-based UI that looks great on desktops, tablets, and phones.
 
