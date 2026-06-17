@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | JobFinder</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2>Welcome Back</h2>
+            <p>Log in to save your dream jobs</p>
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required placeholder="you@example.com">
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn-primary">Login</button>
+            </form>
+            <p class="auth-footer">Don't have an account? <a href="signup.html">Sign Up</a></p>
+            <p><a href="index.html">Back to Search</a></p>
+        </div>
+    </div>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    window.location.href = 'index.html';
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) {
+                alert('Login failed');
+            }
+        });
+    </script>
+</body>
+</html>

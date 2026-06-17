@@ -1,69 +1,74 @@
-# JobFinder 🚀
+# JobFinder Full-Stack 🚀
 
-A modern, fast, and responsive remote job search engine built with pure vanilla technologies. Discover your next career move by searching thousands of remote opportunities worldwide.
-
----
-
-[Live Demo](https://roqaiahanjum.github.io/job-finder-app/) | [Repository](https://github.com/roqaiahanjum/job-finder-app)
+A professional, full-stack remote job search application. This version replaces client-side localStorage with a secure MongoDB database and adds user authentication.
 
 ---
 
 ## 🌟 Overview
 
-**JobFinder** is a single-page application (SPA) that connects job seekers with thousands of remote positions. It pulls real-time data from the [Remotive API](https://remotive.com/api/remote-jobs), allowing users to find, filter, and track their favorite remote jobs.
+**JobFinder Full-Stack** is a complete web application built with a Node.js/Express backend and a Vanilla JS frontend. It utilizes the [Remotive API](https://remotive.com/api/remote-jobs) to fetch real-time job data while providing secure user accounts for persistent job tracking.
 
 ### Key Features
-- **Real-Time Data**: Fetches the latest job listings directly from the Remotive public API.
-- **Dynamic Filtering**: Live search by keyword/role, location, and job category.
-- **Persistent Favorites**: Save jobs to your personal "My Saved Jobs" list, which remains available even after refreshing the page or closing the browser.
-- **Smart Category Sync**: Automatically generates the category dropdown from the actual jobs available, ensuring you never select a category that has no listings.
-- **Responsive Design**: A mobile-first, card-based UI that looks great on desktops, tablets, and phones.
+- **User Authentication**: Secure Signup/Login using **JWT (JSON Web Tokens)** and **bcryptjs** password hashing.
+- **Persistent Database**: All saved jobs are stored in **MongoDB**, tied to specific user accounts.
+- **RESTful API**: Custom backend endpoints for searching, saving, and deleting jobs.
+- **API Proxy Pattern**: The backend acts as a proxy for the Remotive API, eliminating CORS issues and keeping third-party calls off the frontend.
+- **Responsive UI**: Intuitive, mobile-friendly interface with glassmorphism and modern typography.
 
 ## 🎯 Why This Project?
 
-This project was developed as part of a **freeCodeCamp** certification to practice core web development skills without the abstraction of frameworks. The primary learning objectives were:
-- Consuming and handling real-world REST APIs using `fetch` and `async/await`.
-- Implementing complex, multi-criteria client-side filtering.
-- Managing application state and persistent storage using the `localStorage` API.
-- Building a performant UI with CSS Grid and accessible DOM manipulation.
+Upgrading from a frontend-only app to this full-stack version demonstrates mastery of:
+- **Server-Side Development**: Building a structured Express.js server with Middleware and Controllers.
+- **Database Management**: Designing schemas and handling CRUD operations with Mongoose.
+- **Security**: Implementing stateless authentication and hashing sensitive data.
+- **Environment Management**: Using `.env` files to protect sensitive credentials.
 
 ## 🛠️ Tech Stack
 
-- **HTML5**: Semantic structure for accessibility and SEO.
-- **CSS3**: Modern layout techniques (CSS Grid, Flexbox) and a custom design system with Inter-variable typography.
-- **JavaScript (ES6+)**: Vanilla logic for fetching, filtering, and local storage management.
-- **Data Source**: Remotive Public API (No API key required).
+- **Frontend**: Vanilla HTML5, CSS3, JavaScript (ES6+).
+- **Backend**: Node.js, Express.js.
+- **Database**: MongoDB & Mongoose.
+- **Authentication**: JWT & LocalStorage (JWT storage).
+- **External API**: Remotive API (Proxied via backend).
 
 ## ⚙️ How It Works Internally
 
-### 1. Data Fetching & Sync
-On initial load, the app fetches the entire list of remote jobs. To overcome common CORS issues found in some API endpoints, the **Category List** is derived dynamically from the job objects themselves using a `Set` to filter unique values. This guarantees that the filter dropdown always matches the current job data.
+### 1. API Proxy Strategy
+Instead of the browser calling Remotive directly, it calls our `/api/jobs/search` endpoint. Our Node.js server then fetches the data from Remotive and sends it back to the browser. This is a standard pattern that solves CORS restrictions and allows for server-side processing.
 
-### 2. Unified Filtering Logic
-A central `applyFilters()` function handles the application state. It reads the current values of the keyword, location, and category inputs simultaneously. This "Single Source of Truth" approach ensures the "Showing X jobs" counter and the results grid are always in perfect sync.
+### 2. JWT Authentication Flow
+When a user logs in, the server generates a token signed with a `JWT_SECRET`. The frontend stores this token and includes it in the `Authorization: Bearer <token>` header for all "Saved Job" requests.
 
-### 3. Local Storage Persistence
-When a user "saves" a job, the full job object is stored in a `JSON` array inside the browser's `localStorage`. The UI re-checks this storage on every render to correctly display the "Saved" status (★) across different sessions.
+### 3. MongoDB Persistence
+Jobs are saved to the `SavedJob` collection in MongoDB, which contains a reference to the `User` who saved it. This allows multiple users to save the same job without data collisions.
 
-## ⚠️ Known Limitations
+## 🚀 Local Setup
 
-- **Location Filtering**: Remotive's API does not provide a location-based search parameter. As a result, location filtering is performed via case-insensitive text matching on the `candidate_required_location` field in the client-side data.
-- **External Hand-off**: Clicking "View Details" opens the original listing on Remotive. Users may occasionally encounter a brief Cloudflare verification page on Remotive's site; this is a standard security measure on their platform and is independent of this application.
+### Prerequisites
+- [Node.js](https://nodejs.org/) installed.
+- [MongoDB](https://www.mongodb.com/try/download/community) installed and running locally, or a **MongoDB Atlas** connection string.
 
-## 🚀 Running Locally
-
-You can run this project in two ways:
-
-### Option 1: Direct Open
-Simply double-click `index.html` to open it in your browser. (Note: Some browsers may occasionally block API fetches from a `file://` protocol due to security settings).
-
-### Option 2: Local Server (Recommended)
-Using a local server ensures consistent performance and API fetching. If you have Python installed, run this command in the project folder:
-
+### 1. Installation
+Clone the repository and install dependencies:
 ```bash
-python -m http.server 8000
+npm install
 ```
-Then, open your browser and navigate to `http://localhost:8000`.
+
+### 2. Environment Variables
+Create a `.env` file in the root directory (based on `.env.example`):
+```text
+PORT=5000
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
+NODE_ENV=development
+```
+
+### 3. Run the App
+Start the server in development mode (using nodemon):
+```bash
+npm run dev
+```
+The app will be available at `http://localhost:5000`.
 
 ---
 *Created with ❤️ for freeCodeCamp.*

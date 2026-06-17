@@ -1,22 +1,16 @@
 /**
- * JobFinder - Core Application Logic
- * Fetches data from Remotive API and handles filtering, saving, and persistence.
+ * JobFinder Full-Stack - Frontend Logic
  */
 
-// Application State
 const state = {
-    allJobs: [],        // Raw jobs from API
-    filteredJobs: [],   // Jobs after filters applied
-    savedJobs: JSON.parse(localStorage.getItem('savedJobs')) || [],
-    currentView: 'all', // 'all' or 'saved'
-    filters: {
-        keyword: '',
-        location: '',
-        category: ''
-    }
+    allJobs: [],
+    filteredJobs: [],
+    savedJobs: [],
+    currentView: 'all',
+    filters: { keyword: '', location: '', category: '' },
+    token: localStorage.getItem('token') || null
 };
 
-// DOM Elements
 const elements = {
     jobGrid: document.getElementById('jobGrid'),
     jobCount: document.getElementById('jobCountDisplay'),
@@ -31,69 +25,79 @@ const elements = {
     viewSavedBtn: document.getElementById('viewSavedBtn'),
     savedCountBadge: document.getElementById('savedCountBadge'),
     resultsHeading: document.getElementById('resultsHeading'),
-    searchContainer: document.getElementById('searchContainer')
+    searchContainer: document.getElementById('searchContainer'),
+    loginBtn: document.getElementById('loginBtn'),
+    logoutBtn: document.getElementById('logoutBtn')
 };
 
-/**
- * Initialize App
- */
 async function init() {
-    updateSavedCountUI();
+    setupAuthUI();
     attachEventListeners();
+    if (state.token) {
+        await fetchSavedJobs();
+    }
     await fetchJobs();
 }
 
 /**
- * Fetch Jobs from Remotive API
+ * Update UI for Logged In/Out state
+ */
+function setupAuthUI() {
+    if (state.token) {
+        elements.loginBtn.classList.add('hidden');
+        elements.logoutBtn.classList.remove('hidden');
+    } else {
+        elements.loginBtn.classList.remove('hidden');
+        elements.logoutBtn.classList.add('hidden');
+    }
+}
+
+/**
+ * Fetch Jobs via Backend Proxy
  */
 async function fetchJobs() {
     showLoading(true);
     try {
-        const response = await fetch('https://remotive.com/api/remote-jobs');
-        if (!response.ok) throw new Error('Failed to fetch jobs');
-        
-        const data = await response.json();
-        state.allJobs = data.jobs;
-        
-        // Dynamically populate categories based on the data received
-        populateCategories(state.allJobs);
+        const { keyword, category } = state.filters;
+        let url = `/api/jobs/search?`;
+        if (keyword) url += `search=${encodeURIComponent(keyword)}&`;
+        if (category) url += `category=${encodeURIComponent(category)}`;
 
-        // Initial filter application
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        state.allJobs = data.jobs || [];
+        populateCategories(state.allJobs);
         applyFilters();
     } catch (error) {
-        console.error('Fetch Error:', error);
-        elements.jobCount.textContent = '❌ Error fetching jobs. Please try again later.';
+        elements.jobCount.textContent = '❌ Error fetching jobs from server.';
         showLoading(false);
     }
 }
 
 /**
- * Populate Category Dropdown from Unique Job Values
+ * Fetch Saved Jobs from MongoDB
  */
-function populateCategories(jobs) {
-    // Extract unique categories, filter out nulls/undefined, and sort alphabetically
-    const categories = [...new Set(jobs.map(job => job.category))]
-        .filter(cat => cat)
-        .sort();
-
-    // Reset dropdown to just "All Categories"
-    elements.categoryInput.innerHTML = '<option value="">All Categories</option>';
-
-    categories.forEach(cat => {
-        const option = document.createElement('option');
-        option.value = cat;
-        option.textContent = cat;
-        elements.categoryInput.appendChild(option);
-    });
+async function fetchSavedJobs() {
+    try {
+        const response = await fetch('/api/jobs/saved', {
+            headers: { 'Authorization': `Bearer ${state.token}` }
+        });
+        const result = await response.json();
+        if (result.success) {
+            state.savedJobs = result.data;
+            updateSavedCountUI();
+        } else if (response.status === 401) {
+            handleLogout(); // Token expired
+        }
+    } catch (error) {
+        console.error('Error fetching saved jobs:', error);
+    }
 }
 
-/**
- * Apply all current filters to the dataset
- */
 function applyFilters() {
     const { keyword, location, category } = state.filters;
 
-    // We filter from state.allJobs so we always have the full source available
     state.filteredJobs = state.allJobs.filter(job => {
         const matchesKeyword = !keyword || 
             job.title.toLowerCase().includes(keyword.toLowerCase()) || 
@@ -111,19 +115,15 @@ function applyFilters() {
     render();
 }
 
-/**
- * Render the current view
- */
 function render() {
     showLoading(false);
     elements.jobGrid.innerHTML = '';
     
-    // Choose which list to display
     const listToDisplay = state.currentView === 'all' ? state.filteredJobs : state.savedJobs;
     
     if (listToDisplay.length === 0) {
         elements.noResults.classList.remove('hidden');
-        elements.jobCount.textContent = 'No jobs found match your criteria.';
+        elements.jobCount.textContent = 'No jobs found.';
     } else {
         elements.noResults.classList.add('hidden');
         elements.jobCount.textContent = `Showing ${listToDisplay.length} jobs`;
@@ -135,16 +135,15 @@ function render() {
     }
 }
 
-/**
- * Create a Job Card Element
- */
 function createJobCard(job) {
-    const isSaved = state.savedJobs.some(s => s.id === job.id);
+    // Check if job is saved in our locally synced state.savedJobs array
+    // Remotive IDs are numbers, SavedJob IDs are stored as strings in our DB
+    const jobId = (job.id || job.jobId).toString();
+    const isSaved = state.savedJobs.some(s => s.jobId === jobId);
+    
     const div = document.createElement('div');
     div.className = 'job-card';
-    
-    // Strip HTML tags and truncate description
-    const cleanDesc = job.description.replace(/<[^>]*>?/gm, '');
+    const cleanDesc = (job.description || '').replace(/<[^>]*>?/gm, '');
     const truncatedDesc = cleanDesc.substring(0, 150) + '...';
 
     div.innerHTML = `
@@ -165,96 +164,120 @@ function createJobCard(job) {
         <p class="description">${truncatedDesc}</p>
         <div class="card-footer">
             <a href="${job.url}" target="_blank" class="btn-detail">View Details →</a>
-            <button class="btn-save ${isSaved ? 'saved' : ''}" data-id="${job.id}">
-                ${isSaved ? '★ Saved' : '☆ Save'}
-            </button>
+            ${state.token ? 
+                `<button class="btn-save ${isSaved ? 'saved' : ''}" data-id="${jobId}">
+                    ${isSaved ? '★ Saved' : '☆ Save'}
+                </button>` : 
+                `<a href="login.html" class="tag" style="text-decoration:none">Log in to save</a>`
+            }
         </div>
     `;
 
-    // Add event listener to save button
-    const saveBtn = div.querySelector('.btn-save');
-    saveBtn.addEventListener('click', () => toggleSaveJob(job));
+    if (state.token) {
+        const saveBtn = div.querySelector('.btn-save');
+        saveBtn.addEventListener('click', () => toggleSaveJob(job));
+    }
 
     return div;
 }
 
-/**
- * Toggle Save/Unsave Job
- */
-function toggleSaveJob(job) {
-    const index = state.savedJobs.findIndex(s => s.id === job.id);
-    
-    if (index === -1) {
-        state.savedJobs.push(job);
-    } else {
-        state.savedJobs.splice(index, 1);
-    }
+async function toggleSaveJob(job) {
+    const jobId = (job.id || job.jobId).toString();
+    const isCurrentlySaved = state.savedJobs.some(s => s.jobId === jobId);
 
-    // Save to LocalStorage
-    localStorage.setItem('savedJobs', JSON.stringify(state.savedJobs));
-    updateSavedCountUI();
-    render(); // Re-render to update icon state
+    try {
+        if (isCurrentlySaved) {
+            // Delete from MongoDB
+            const res = await fetch(`/api/jobs/saved/${jobId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${state.token}` }
+            });
+            if (res.ok) {
+                state.savedJobs = state.savedJobs.filter(s => s.jobId !== jobId);
+            }
+        } else {
+            // Save to MongoDB
+            const res = await fetch('/api/jobs/saved', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${state.token}`
+                },
+                body: JSON.stringify(job)
+            });
+            const data = await res.json();
+            if (data.success) {
+                state.savedJobs.push(data.data);
+            }
+        }
+        updateSavedCountUI();
+        render();
+    } catch (err) {
+        console.error('Error toggling job save:', err);
+    }
 }
 
-/**
- * Update UI for Saved Jobs count
- */
 function updateSavedCountUI() {
     elements.savedCountBadge.textContent = state.savedJobs.length;
 }
 
-/**
- * Debounce helper for live search
- */
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+function populateCategories(jobs) {
+    const categories = [...new Set(jobs.map(job => job.category))]
+        .filter(cat => cat)
+        .sort();
+    elements.categoryInput.innerHTML = '<option value="">All Categories</option>';
+    categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        elements.categoryInput.appendChild(option);
+    });
 }
 
-/**
- * Handle input changes with debounce
- */
+function handleLogout() {
+    localStorage.removeItem('token');
+    state.token = null;
+    state.savedJobs = [];
+    window.location.reload();
+}
+
+const debounce = (func, wait) => {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    };
+};
+
 const handleInput = debounce(() => {
     state.filters.keyword = elements.keywordInput.value;
     state.filters.location = elements.locationInput.value;
     state.filters.category = elements.categoryInput.value;
-    applyFilters();
+    
+    // If user typed in keyword or changed category, we re-fetch from API proxy
+    // If they just filtered by location, we filter client-side
+    // To keep it simple, we re-fetch on keyword/category changes
+    fetchJobs();
 }, 400);
 
-/**
- * Event Listeners
- */
 function attachEventListeners() {
-    // Search Inputs
     elements.keywordInput.addEventListener('input', handleInput);
-    elements.locationInput.addEventListener('input', handleInput);
-    elements.categoryInput.addEventListener('change', handleInput);
-
-    // Search Button
-    elements.searchBtn.addEventListener('click', () => {
-        state.filters.keyword = elements.keywordInput.value;
+    elements.locationInput.addEventListener('input', () => {
         state.filters.location = elements.locationInput.value;
-        state.filters.category = elements.categoryInput.value;
         applyFilters();
     });
+    elements.categoryInput.addEventListener('change', handleInput);
 
-    // Clear Filters
+    elements.searchBtn.addEventListener('click', fetchJobs);
+
     elements.clearBtn.addEventListener('click', () => {
         elements.keywordInput.value = '';
         elements.locationInput.value = '';
         elements.categoryInput.value = '';
         state.filters = { keyword: '', location: '', category: '' };
-        applyFilters();
+        fetchJobs();
     });
 
-    // View Toggles
     elements.viewAllBtn.addEventListener('click', () => {
         state.currentView = 'all';
         elements.viewAllBtn.classList.add('active');
@@ -269,21 +292,22 @@ function attachEventListeners() {
         elements.viewSavedBtn.classList.add('active');
         elements.viewAllBtn.classList.remove('active');
         elements.resultsHeading.textContent = 'My Saved Jobs';
-        elements.searchContainer.classList.add('hidden'); // Optional: hide filters in saved view
+        elements.searchContainer.classList.add('hidden');
         render();
     });
+
+    elements.logoutBtn.addEventListener('click', handleLogout);
 }
 
 function showLoading(show) {
     if (show) {
         elements.loadingSpinner.classList.remove('hidden');
         elements.jobGrid.classList.add('hidden');
-        elements.jobCount.textContent = 'Connecting to Remotive API...';
+        elements.jobCount.textContent = 'Searching server...';
     } else {
         elements.loadingSpinner.classList.add('hidden');
         elements.jobGrid.classList.remove('hidden');
     }
 }
 
-// Start the app
 init();
