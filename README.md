@@ -1,5 +1,7 @@
 # JobFinder Full-Stack 🚀
 
+[Repository](https://github.com/roqaiahanjum/job-finder-app)
+
 A professional, full-stack remote job search application. This version replaces client-side localStorage with a secure MongoDB database and adds user authentication.
 
 ---
@@ -28,7 +30,7 @@ Upgrading from a frontend-only app to this full-stack version demonstrates maste
 - **Frontend**: Vanilla HTML5, CSS3, JavaScript (ES6+).
 - **Backend**: Node.js, Express.js.
 - **Database**: MongoDB & Mongoose.
-- **Authentication**: JWT & LocalStorage (JWT storage).
+- **Authentication**: JWT (JSON Web Tokens). The token is stored in localStorage for simplicity in this learning project; a production app would typically use an httpOnly cookie instead to reduce XSS exposure.
 - **External API**: Remotive API (Proxied via backend).
 
 ## ⚙️ How It Works Internally
@@ -41,6 +43,18 @@ When a user logs in, the server generates a token signed with a `JWT_SECRET`. Th
 
 ### 3. MongoDB Persistence
 Jobs are saved to the `SavedJob` collection in MongoDB, which contains a reference to the `User` who saved it. This allows multiple users to save the same job without data collisions.
+
+## 📡 API Endpoints
+
+### Auth Routes
+- `POST /api/auth/signup` — Creates a new user account.
+- `POST /api/auth/login` — Authenticates a user and returns a JWT token.
+
+### Job Routes
+- `GET /api/jobs/search` — Proxies a search request to the Remotive API (public).
+- `GET /api/jobs/saved` — Returns all saved jobs for the logged-in user (protected).
+- `POST /api/jobs/saved` — Saves a specific job for the logged-in user (protected).
+- `DELETE /api/jobs/saved/:id` — Removes a saved job by its jobId (protected).
 
 ## 🚀 Local Setup
 
